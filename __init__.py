@@ -17,7 +17,7 @@ md_version = "2.1"
 md_name = "Translator"
 md_description = "Translate text using online translators"
 md_license = "MIT"
-md_url = "https://github.com/albertlauncher/python/tree/main/translators"
+md_url = "https://github.com/albertlauncher/albert-plugin-python-translators"
 md_authors = "@manuelschneid3r"
 md_lib_dependencies = "translators"
 
