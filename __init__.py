@@ -13,14 +13,14 @@ from albert import *
 import translators as ts
 
 md_iid = "3.0"
-md_version = "2.1"
+md_version = "2.2"
 md_name = "Translator"
 md_description = "Translate text using online translators"
 md_license = "MIT"
 md_url = "https://github.com/albertlauncher/albert-plugin-python-translators"
-md_authors = "@manuelschneid3r"
-md_lib_dependencies = "translators"
-md_maintainers = ["@manuelschneid3r"]
+md_authors = ["@ManuelSchneid3r"]
+md_lib_dependencies = ["translators"]
+md_maintainers = ["@ManuelSchneid3r"]
 
 
 class Plugin(PluginInstance, TriggerQueryHandler):
