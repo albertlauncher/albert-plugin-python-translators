@@ -12,7 +12,7 @@ from time import sleep
 from albert import *
 import translators as ts
 
-md_iid = "3.0"
+md_iid = "4.0"
 md_version = "2.2"
 md_name = "Translator"
 md_description = "Translate text using online translators"
@@ -29,8 +29,6 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         PluginInstance.__init__(self)
         TriggerQueryHandler.__init__(self)
 
-        self.iconUrls = [f"file:{Path(__file__).parent}/google_translate.png"]
-
         self._translator = self.readConfig('translator', str)
         if self._translator is None:
             self._translator = 'google'
@@ -45,6 +43,10 @@ class Plugin(PluginInstance, TriggerQueryHandler):
             self.dst_languages = set(languages[self.lang])
         except Exception as e:
             warning(str(e))
+
+    @staticmethod
+    def makeIcon():
+        return makeImageIcon(Path(__file__).parent / "google_translate.png")
 
     @property
     def translator(self):
@@ -133,7 +135,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                     id=self.id(),
                     text=translation,
                     subtext=f"{src.upper()} > {dst.upper()}",
-                    iconUrls=self.iconUrls,
+                    iconFactory=Plugin.makeIcon,
                     actions=actions
                 ))
 
@@ -143,7 +145,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                     id=self.id(),
                     text="Error",
                     subtext=str(e),
-                    iconUrls=self.iconUrls
+                    iconFactory=Plugin.makeIcon
                 ))
 
                 warning(str(e))
