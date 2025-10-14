@@ -135,7 +135,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                     id=self.id(),
                     text=translation,
                     subtext=f"{src.upper()} > {dst.upper()}",
-                    iconFactory=Plugin.makeIcon,
+                    icon_factory=Plugin.makeIcon,
                     actions=actions
                 ))
 
@@ -145,7 +145,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                     id=self.id(),
                     text="Error",
                     subtext=str(e),
-                    iconFactory=Plugin.makeIcon
+                    icon_factory=Plugin.makeIcon
                 ))
 
                 warning(str(e))
