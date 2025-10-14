@@ -13,7 +13,7 @@ from albert import *
 import translators as ts
 
 md_iid = "4.0"
-md_version = "2.2"
+md_version = "2.2.1"
 md_name = "Translator"
 md_description = "Translate text using online translators"
 md_license = "MIT"
