@@ -46,7 +46,7 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
 
     @staticmethod
     def makeIcon():
-        return makeImageIcon(Path(__file__).parent / "google_translate.png")
+        return Icon.image(Path(__file__).parent / "google_translate.png")
 
     @property
     def translator(self):
