@@ -35,18 +35,30 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
 
         self._lang = self.readConfig('lang', str)
         if self._lang is None:
-            self._lang = getdefaultlocale()[0][0:2]
+            locale = getdefaultlocale()[0] or ""
+            self._lang = locale.split('_', maxsplit=1)[0].lower()
+        if len(self._lang) != 2 or not self._lang.isalpha():
+            self._lang = 'en'
 
+        self.src_languages = set()
+        self.dst_languages = set()
+        self._update_languages()
+
+    def _update_languages(self):
         try:
             languages = ts.get_languages(self.translator)
             self.src_languages = set(languages.keys())
-            self.dst_languages = set(languages[self.lang])
+            self.dst_languages = set(languages.get(self.lang, []))
         except Exception as e:
             warning(str(e))
 
     @staticmethod
     def makeIcon():
         return Icon.image(Path(__file__).parent / "google_translate.png")
+
+    @staticmethod
+    def _looks_like_language_code(value):
+        return len(value) == 2 and value.isalpha()
 
     @property
     def translator(self):
@@ -56,9 +68,7 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
     def translator(self, value):
         self._translator = value
         self.writeConfig('translator', value)
-        languages = ts.get_languages(self.translator)
-        self.src_languages = set(languages.keys())
-        self.dst_languages = set(languages[self.lang])
+        self._update_languages()
 
     @property
     def lang(self):
@@ -66,8 +76,9 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
 
     @lang.setter
     def lang(self, value):
-        self._lang = value
-        self.writeConfig('lang', value)
+        self._lang = value.lower()
+        self.writeConfig('lang', self._lang)
+        self._update_languages()
 
     def defaultTrigger(self):
         return 'tr '
@@ -105,11 +116,21 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
             if not ctx.isValid:
                 return []
 
-        if len(splits := query.split(maxsplit=2)) == 3 \
-                and splits[0] in self.src_languages and splits[1] in self.dst_languages:
-            src, dst, text = splits
-        elif len(splits := query.split(maxsplit=1)) == 2 and splits[0] in self.src_languages:
-            src, dst, text = 'auto', splits[0], splits[1]
+        if len(splits := query.split(maxsplit=2)) == 3:
+            src_candidate, dst_candidate, text = splits[0].lower(), splits[1].lower(), splits[2]
+            if (src_candidate in self.src_languages and dst_candidate in self.dst_languages) or \
+                    (not self.src_languages and self._looks_like_language_code(src_candidate)
+                     and self._looks_like_language_code(dst_candidate)):
+                src, dst = src_candidate, dst_candidate
+            else:
+                src, dst, text = 'auto', self.lang, query
+        elif len(splits := query.split(maxsplit=1)) == 2:
+            dst_candidate, text = splits[0].lower(), splits[1]
+            if dst_candidate in self.src_languages or \
+                    (not self.src_languages and self._looks_like_language_code(dst_candidate)):
+                src, dst = 'auto', dst_candidate
+            else:
+                src, dst, text = 'auto', self.lang, query
         else:
             src, dst, text = 'auto', self.lang, query
 
@@ -125,23 +146,19 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
                 actions.append(Action("paste", "Copy & Paste", lambda t=translation: setClipboardTextAndPaste(t)))
             actions.append(Action("copy", "Copy to clipboard", lambda t=translation: setClipboardText(t)))
 
-            yield [
-                StandardItem(
-                    id=self.id(),
-                    text=translation,
-                    subtext=f"{src.upper()} > {dst.upper()}",
-                    icon_factory=Plugin.makeIcon,
-                    actions=actions
-                )
-            ]
+            yield StandardItem(
+                id=self.id(),
+                text=translation,
+                subtext=f"{src.upper()} > {dst.upper()}",
+                icon_factory=Plugin.makeIcon,
+                actions=actions
+            )
 
         except Exception as e:
             warning(str(e))
-            yield [
-                StandardItem(
-                    id=self.id(),
-                    text="Error",
-                    subtext=str(e),
-                    icon_factory=Plugin.makeIcon
-                )
-            ]
+            yield StandardItem(
+                id=self.id(),
+                text="Error",
+                subtext=str(e),
+                icon_factory=Plugin.makeIcon
+            )
