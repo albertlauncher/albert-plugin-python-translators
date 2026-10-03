@@ -45,7 +45,7 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
             warning(str(e))
 
     @staticmethod
-    def makeIcon():
+    def make_icon():
         return Icon.image(Path(__file__).parent / "google_translate.png")
 
     @property
@@ -130,7 +130,7 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
                     id=self.id(),
                     text=translation,
                     subtext=f"{src.upper()} > {dst.upper()}",
-                    icon_factory=Plugin.makeIcon,
+                    icon_factory=Plugin.make_icon,
                     actions=actions
                 )
             ]
@@ -142,6 +142,6 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
                     id=self.id(),
                     text="Error",
                     subtext=str(e),
-                    icon_factory=Plugin.makeIcon
+                    icon_factory=Plugin.make_icon
                 )
             ]
