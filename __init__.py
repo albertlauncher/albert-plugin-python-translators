@@ -94,18 +94,30 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
             }
         ]
 
-    def synopsis(self, s):
+    def synopsis(self, query):
         return "[[from] to] text"
 
-    def items(self, ctx):
-        query = ctx.query.strip()
+    def items(self, context):
+        if not self.languages:
+            yield [
+                StandardItem(
+                    id=self.id(),
+                    text="Plugin initialization failed",
+                    subtext="Activate to try again",
+                    icon_factory=make_error_icon,
+                    actions=[Action(id="init", text="Initialize plugin", callable=self.update_languages)]
+                )
+            ]
+            return
+
+        query = context.query.strip()
         if not query:
-            return []
+            return
 
         for _ in range(50):
             sleep(0.01)
-            if not ctx.isValid:
-                return []
+            if not context.isValid:
+                return
 
         if len(splits := query.split(maxsplit=2)) == 3 \
                 and splits[0] in self.languages and splits[1] in self.languages.get(splits[0], []):
