@@ -5,8 +5,9 @@
 Translates text using the python package [translators](https://pypi.org/project/translators/).
 """
 
-from locale import getdefaultlocale
 import os
+import re
+from locale import getlocale
 from pathlib import Path
 from time import sleep
 
@@ -25,6 +26,14 @@ md_lib_dependencies = ["translators"]
 md_maintainers = ["@ManuelSchneid3r"]
 
 
+def make_icon():
+    return Icon.image(Path(__file__).parent / "google_translate.png")
+
+
+def make_error_icon():
+    return Icon.composed(make_icon(), Icon.grapheme("⚠️"))
+
+
 class Plugin(PluginInstance, GeneratorQueryHandler):
 
     def __init__(self):
@@ -35,20 +44,27 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
         if self._translator is None:
             self._translator = 'google'
 
-        self._lang = self.readConfig('lang', str)
-        if self._lang is None:
-            self._lang = getdefaultlocale()[0][0:2]
+        self.language = 'en'
+        self.languages = dict()
+        self.update_languages()
 
+    def update_languages(self):
         try:
-            languages = ts.get_languages(self.translator)
-            self.src_languages = set(languages.keys())
-            self.dst_languages = set(languages[self.lang])
+            self.languages = ts.get_languages(self.translator)
         except Exception as e:
+            self.languages = dict()
             warning(str(e))
+        self.language = self.language_from_locale()
+        if self.language not in self.languages:
+            self.language = 'en'
 
     @staticmethod
-    def make_icon():
-        return Icon.image(Path(__file__).parent / "google_translate.png")
+    def language_from_locale():
+        language_code = getlocale()[0]  # https://docs.python.org/3/library/locale.html#locale.getlocale
+        if language_code:  # https://docs.python.org/3/library/locale.html#locale-name
+            return re.split(r'[._-]', language_code, maxsplit=1)[0].lower()
+        else:  # 'C' locale
+            return 'en'
 
     @property
     def translator(self):
@@ -58,18 +74,7 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
     def translator(self, value):
         self._translator = value
         self.writeConfig('translator', value)
-        languages = ts.get_languages(self.translator)
-        self.src_languages = set(languages.keys())
-        self.dst_languages = set(languages[self.lang])
-
-    @property
-    def lang(self):
-        return self._lang
-
-    @lang.setter
-    def lang(self, value):
-        self._lang = value
-        self.writeConfig('lang', value)
+        self.update_languages()
 
     def defaultTrigger(self):
         return 'tr '
@@ -86,11 +91,6 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
                 'property': 'translator',
                 'label': 'Translator',
                 'items': ts.translators_pool
-            },
-            {
-                'type': 'lineedit',
-                'property': 'lang',
-                'label': 'Default language',
             }
         ]
 
@@ -108,12 +108,13 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
                 return []
 
         if len(splits := query.split(maxsplit=2)) == 3 \
-                and splits[0] in self.src_languages and splits[1] in self.dst_languages:
+                and splits[0] in self.languages and splits[1] in self.languages.get(splits[0], []):
             src, dst, text = splits
-        elif len(splits := query.split(maxsplit=1)) == 2 and splits[0] in self.src_languages:
+        elif len(splits := query.split(maxsplit=1)) == 2 \
+                and splits[0] in self.languages.get(self.language, []):
             src, dst, text = 'auto', splits[0], splits[1]
         else:
-            src, dst, text = 'auto', self.lang, query
+            src, dst, text = 'auto', self.language, query
 
         try:
             translation = ts.translate_text(query_text=text,
@@ -132,7 +133,7 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
                     id=self.id(),
                     text=translation,
                     subtext=f"{src.upper()} > {dst.upper()}",
-                    icon_factory=Plugin.make_icon,
+                    icon_factory=make_icon,
                     actions=actions
                 )
             ]
@@ -144,6 +145,6 @@ class Plugin(PluginInstance, GeneratorQueryHandler):
                     id=self.id(),
                     text="Error",
                     subtext=str(e),
-                    icon_factory=Plugin.make_icon
+                    icon_factory=make_icon
                 )
             ]
