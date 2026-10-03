@@ -6,11 +6,13 @@ Translates text using the python package [translators](https://pypi.org/project/
 """
 
 from locale import getdefaultlocale
+import os
 from pathlib import Path
 from time import sleep
 
-from albert import *
+os.environ["translators_default_region"] = "EN"
 import translators as ts
+from albert import *
 
 md_iid = "5.0"
 md_version = "2.2.2"
